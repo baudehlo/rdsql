@@ -60,6 +60,26 @@ describe("db", () => {
 			);
 		});
 
+		it("should always include includeResultMetadata: true in the request", async () => {
+			mockSend.mockResolvedValue({
+				columnMetadata: [{ name: "id" }],
+				records: [[{ longValue: 1 }]],
+			});
+
+			await executeQuery(
+				mockClient,
+				"arn:aws:rds:us-east-1:123456789012:cluster:test",
+				"testdb",
+				"SELECT 1",
+				"arn:aws:secretsmanager:us-east-1:123456789012:secret:test",
+			);
+
+			const MockedCmd = ExecuteStatementCommand as unknown as Mock;
+			expect(MockedCmd).toHaveBeenCalledWith(
+				expect.objectContaining({ includeResultMetadata: true }),
+			);
+		});
+
 		it("should handle different field types", async () => {
 			const mockResponse = {
 				columnMetadata: [

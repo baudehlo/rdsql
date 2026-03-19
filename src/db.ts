@@ -45,6 +45,7 @@ export async function executeQuery(
 		secretArn,
 		database,
 		sql,
+		includeResultMetadata: true,
 	};
 
 	try {
