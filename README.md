@@ -38,8 +38,8 @@ npm link
 - Node.js 18.x or higher
 - AWS Account with:
   - RDS Aurora Serverless v1/v2 cluster with Data API enabled
-  - AWS Secrets Manager secret containing database credentials
   - Appropriate IAM permissions for RDS Data API and Secrets Manager
+  - (optional) AWS Secrets Manager secret containing database credentials
 
 ## Quick Start
 
