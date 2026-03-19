@@ -12,6 +12,17 @@ import { startRepl } from './repl';
 import { createRdsDataClient } from './aws';
 import { executeQuery } from './db';
 import { format } from './formatter';
+import { OutputFormat } from './types';
+
+const VALID_FORMATS: OutputFormat[] = ['csv', 'html', 'json', 'text'];
+
+function parseOutputFormat(value: string): OutputFormat {
+  if (VALID_FORMATS.includes(value as OutputFormat)) {
+    return value as OutputFormat;
+  }
+  console.warn(`Invalid format "${value}", defaulting to "text"`);
+  return 'text';
+}
 
 const program = new Command();
 
@@ -102,7 +113,7 @@ program
         dbConfig.password
       );
 
-      const formatted = format(result, options.format as any);
+      const formatted = format(result, parseOutputFormat(options.format));
       console.log(formatted);
     } catch (error) {
       console.error('Query error:', error);

@@ -81,7 +81,7 @@ export function formatAsHtml(result: QueryResult): string {
   }
 
   if (result.rows.length === 0) {
-    return '<table><tr>' + result.columns.map(col => `<th>${col}</th>`).join('') + '</tr></table>';
+    return `<table><tr>${result.columns.map(col => `<th>${col}</th>`).join('')}</tr></table>`;
   }
 
   const escapeHtml = (value: unknown): string => {
