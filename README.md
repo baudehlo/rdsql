@@ -308,8 +308,14 @@ npm test
 ### Lint
 
 ```bash
+# Check for issues
 npm run lint
+
+# Check and auto-fix
+npm run lint:fix
 ```
+
+> Linting is powered by [Biome](https://biomejs.dev) — a fast, unified formatter and linter.
 
 ### Project Structure
 
