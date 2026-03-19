@@ -121,6 +121,30 @@ describe("db", () => {
 			expect(result.rows).toEqual([]);
 		});
 
+		it("should ignore numberOfRecordsUpdated from API when SELECT returns rows", async () => {
+			// The RDS Data API always returns numberOfRecordsUpdated: 0 for SELECT
+			// statements. It must not be propagated when column/record data is present.
+			const mockResponse = {
+				columnMetadata: [{ name: "id" }],
+				records: [[{ longValue: 1 }]],
+				numberOfRecordsUpdated: 0,
+			};
+
+			mockSend.mockResolvedValue(mockResponse);
+
+			const result = await executeQuery(
+				mockClient,
+				"arn:aws:rds:us-east-1:123456789012:cluster:test",
+				"testdb",
+				"SELECT * FROM users",
+				"arn:aws:secretsmanager:us-east-1:123456789012:secret:test",
+			);
+
+			expect(result.numberOfRecordsUpdated).toBeUndefined();
+			expect(result.columns).toEqual(["id"]);
+			expect(result.rows).toEqual([{ id: 1 }]);
+		});
+
 		it("should throw error when neither secretArn nor username/password provided", async () => {
 			await expect(
 				executeQuery(

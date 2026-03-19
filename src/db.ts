@@ -74,7 +74,10 @@ export async function executeQuery(
 		return {
 			columns,
 			rows,
-			numberOfRecordsUpdated: response.numberOfRecordsUpdated,
+			numberOfRecordsUpdated:
+				response.columnMetadata || response.records
+					? undefined
+					: response.numberOfRecordsUpdated,
 		};
 	} catch (error) {
 		throw new Error(`Query execution failed: ${error}`);
