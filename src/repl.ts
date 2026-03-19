@@ -10,10 +10,12 @@ export class ReplSession {
 	private outputFormat: OutputFormat = "text";
 	private dbConfig: DatabaseConfig;
 	private dbName: string;
+	private debug: boolean;
 
-	constructor(dbConfig: DatabaseConfig, dbName: string) {
+	constructor(dbConfig: DatabaseConfig, dbName: string, debug = false) {
 		this.dbConfig = dbConfig;
 		this.dbName = dbName;
+		this.debug = debug;
 
 		this.rl = readline.createInterface({
 			input: process.stdin,
@@ -29,6 +31,9 @@ export class ReplSession {
 	private showHelp(): void {
 		console.log("\nAvailable commands:");
 		console.log("  /format <csv|html|json|text>  - Set output format");
+		console.log(
+			"  /debug                         - Toggle raw API response debug output",
+		);
 		console.log("  /?, /h                         - Show this help");
 		console.log("  /q                             - Quit");
 		console.log("  Ctrl-C                         - Quit");
@@ -46,6 +51,12 @@ export class ReplSession {
 
 		if (trimmed === "/?" || trimmed === "/h") {
 			this.showHelp();
+			return false;
+		}
+
+		if (trimmed === "/debug") {
+			this.debug = !this.debug;
+			console.log(`Debug output ${this.debug ? "enabled" : "disabled"}`);
 			return false;
 		}
 
@@ -77,6 +88,7 @@ export class ReplSession {
 				this.dbConfig.secretArn,
 				this.dbConfig.username,
 				this.dbConfig.password,
+				this.debug,
 			);
 
 			const formatted = format(result, this.outputFormat);
@@ -146,7 +158,8 @@ export class ReplSession {
 export async function startRepl(
 	dbConfig: DatabaseConfig,
 	dbName: string,
+	debug = false,
 ): Promise<void> {
-	const session = new ReplSession(dbConfig, dbName);
+	const session = new ReplSession(dbConfig, dbName, debug);
 	await session.start();
 }

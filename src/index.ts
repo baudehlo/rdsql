@@ -88,42 +88,49 @@ program
 	.description("Execute a SQL query")
 	.option("--db <name>", "Database to use (defaults to current)")
 	.option("--format <format>", "Output format: text, csv, json, html", "text")
-	.action(async (sql: string, options: { db?: string; format: string }) => {
-		try {
-			const dbName = options.db || getCurrentDatabase();
+	.option("--debug", "Dump raw API response to stderr for debugging")
+	.action(
+		async (
+			sql: string,
+			options: { db?: string; format: string; debug?: boolean },
+		) => {
+			try {
+				const dbName = options.db || getCurrentDatabase();
 
-			if (!dbName) {
-				console.error("No database specified and no current database set.");
-				console.error('Use --db <name> or run "rdsql use <name>" first.');
+				if (!dbName) {
+					console.error("No database specified and no current database set.");
+					console.error('Use --db <name> or run "rdsql use <name>" first.');
+					process.exit(1);
+				}
+
+				const dbConfig = getDatabase(dbName);
+				if (!dbConfig) {
+					console.error(`Database "${dbName}" not found in configuration.`);
+					process.exit(1);
+				}
+
+				const client = createRdsDataClient(dbConfig);
+				const result = await executeQuery(
+					client,
+					dbConfig.resourceArn,
+					dbConfig.database,
+					sql,
+					dbConfig.secretArn,
+					dbConfig.username,
+					dbConfig.password,
+					options.debug,
+				);
+
+				const formatted = format(result, parseOutputFormat(options.format));
+				console.log(formatted);
+			} catch (error) {
+				console.error("Query error:", error);
 				process.exit(1);
 			}
+		},
+	);
 
-			const dbConfig = getDatabase(dbName);
-			if (!dbConfig) {
-				console.error(`Database "${dbName}" not found in configuration.`);
-				process.exit(1);
-			}
-
-			const client = createRdsDataClient(dbConfig);
-			const result = await executeQuery(
-				client,
-				dbConfig.resourceArn,
-				dbConfig.database,
-				sql,
-				dbConfig.secretArn,
-				dbConfig.username,
-				dbConfig.password,
-			);
-
-			const formatted = format(result, parseOutputFormat(options.format));
-			console.log(formatted);
-		} catch (error) {
-			console.error("Query error:", error);
-			process.exit(1);
-		}
-	});
-
-program.action(async (options: { db?: string }) => {
+program.action(async (options: { db?: string; debug?: boolean }) => {
 	try {
 		const dbName = options.db || getCurrentDatabase();
 
@@ -141,7 +148,7 @@ program.action(async (options: { db?: string }) => {
 			process.exit(1);
 		}
 
-		await startRepl(dbConfig, dbName);
+		await startRepl(dbConfig, dbName, options.debug);
 	} catch (error) {
 		console.error("Error:", error);
 		process.exit(1);
@@ -149,5 +156,6 @@ program.action(async (options: { db?: string }) => {
 });
 
 program.option("--db <name>", "Database to use for REPL");
+program.option("--debug", "Dump raw API response to stderr for debugging");
 
 program.parse();

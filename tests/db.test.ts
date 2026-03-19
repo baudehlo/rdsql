@@ -185,6 +185,61 @@ describe("db", () => {
 				),
 			).rejects.toThrow("Query execution failed");
 		});
+
+		it("should write raw response to stderr when debug is true", async () => {
+			const mockResponse = {
+				columnMetadata: [{ name: "id" }],
+				records: [[{ longValue: 42 }]],
+				numberOfRecordsUpdated: 0,
+			};
+			mockSend.mockResolvedValue(mockResponse);
+
+			const stderrSpy = vi
+				.spyOn(process.stderr, "write")
+				.mockImplementation(() => true);
+
+			await executeQuery(
+				mockClient,
+				"arn:aws:rds:us-east-1:123456789012:cluster:test",
+				"testdb",
+				"SELECT * FROM users",
+				"arn:aws:secretsmanager:us-east-1:123456789012:secret:test",
+				undefined,
+				undefined,
+				true,
+			);
+
+			expect(stderrSpy).toHaveBeenCalledOnce();
+			const output = stderrSpy.mock.calls[0][0] as string;
+			expect(output).toContain("[debug] Raw API response:");
+			expect(output).toContain('"longValue": 42');
+
+			stderrSpy.mockRestore();
+		});
+
+		it("should not write to stderr when debug is false", async () => {
+			const mockResponse = {
+				columnMetadata: [{ name: "id" }],
+				records: [[{ longValue: 1 }]],
+			};
+			mockSend.mockResolvedValue(mockResponse);
+
+			const stderrSpy = vi
+				.spyOn(process.stderr, "write")
+				.mockImplementation(() => true);
+
+			await executeQuery(
+				mockClient,
+				"arn:aws:rds:us-east-1:123456789012:cluster:test",
+				"testdb",
+				"SELECT * FROM users",
+				"arn:aws:secretsmanager:us-east-1:123456789012:secret:test",
+			);
+
+			expect(stderrSpy).not.toHaveBeenCalled();
+
+			stderrSpy.mockRestore();
+		});
 	});
 
 	describe("testConnection", () => {

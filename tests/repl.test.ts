@@ -125,6 +125,28 @@ describe("repl", () => {
 			consoleSpy.mockRestore();
 		});
 
+		it("should toggle debug mode with /debug command", async () => {
+			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
+
+			const session = new ReplSession(dbConfig, "testdb");
+			await session.start();
+
+			const lineListener = mockRlInterface.on.mock.calls.find(
+				(call) => call[0] === "line",
+			)?.[1];
+
+			if (lineListener) {
+				await lineListener("/debug");
+				expect(consoleSpy).toHaveBeenCalledWith("Debug output enabled");
+				consoleSpy.mockClear();
+
+				await lineListener("/debug");
+				expect(consoleSpy).toHaveBeenCalledWith("Debug output disabled");
+			}
+
+			consoleSpy.mockRestore();
+		});
+
 		it("should handle invalid format", async () => {
 			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
 

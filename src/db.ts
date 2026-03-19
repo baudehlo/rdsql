@@ -24,6 +24,7 @@ export async function executeQuery(
 	secretArn?: string,
 	username?: string,
 	password?: string,
+	debug = false,
 ): Promise<QueryResult> {
 	if (!secretArn && (!username || !password)) {
 		throw new Error(
@@ -49,6 +50,12 @@ export async function executeQuery(
 	try {
 		const command = new ExecuteStatementCommand(params);
 		const response = await client.send(command);
+
+		if (debug) {
+			process.stderr.write(
+				`[debug] Raw API response:\n${JSON.stringify(response, null, 2)}\n`,
+			);
+		}
 
 		const columns: string[] = [];
 		const rows: Array<Record<string, unknown>> = [];
