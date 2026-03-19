@@ -1,5 +1,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
+import type { Mocked } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getConfigPath,
 	getCurrentDatabase,
@@ -11,15 +13,15 @@ import {
 } from "../src/config";
 import type { AppConfig } from "../src/types";
 
-jest.mock("node:fs");
-jest.mock("node:os");
+vi.mock("node:fs");
+vi.mock("node:os");
 
-const mockFs = fs as jest.Mocked<typeof fs>;
-const mockOs = os as jest.Mocked<typeof os>;
+const mockFs = fs as Mocked<typeof fs>;
+const mockOs = os as Mocked<typeof os>;
 
 describe("config", () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		mockOs.homedir.mockReturnValue("/home/testuser");
 	});
 

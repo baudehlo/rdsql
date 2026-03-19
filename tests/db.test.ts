@@ -2,30 +2,30 @@ import {
 	ExecuteStatementCommand,
 	RDSDataClient,
 } from "@aws-sdk/client-rds-data";
+import type { Mock, Mocked, MockedClass, MockedFunction } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRdsDataClient } from "../src/aws";
 import { executeQuery, testConnection } from "../src/db";
 import type { DatabaseConfig } from "../src/types";
 
-jest.mock("@aws-sdk/client-rds-data");
-jest.mock("../src/aws");
+vi.mock("@aws-sdk/client-rds-data");
+vi.mock("../src/aws");
 
-const _mockRDSDataClient = RDSDataClient as jest.MockedClass<
-	typeof RDSDataClient
->;
-const mockCreateRdsDataClient = createRdsDataClient as jest.MockedFunction<
+const _mockRDSDataClient = RDSDataClient as MockedClass<typeof RDSDataClient>;
+const mockCreateRdsDataClient = createRdsDataClient as MockedFunction<
 	typeof createRdsDataClient
 >;
 
 describe("db", () => {
-	let mockClient: jest.Mocked<RDSDataClient>;
-	let mockSend: jest.Mock;
+	let mockClient: Mocked<RDSDataClient>;
+	let mockSend: Mock;
 
 	beforeEach(() => {
-		jest.clearAllMocks();
-		mockSend = jest.fn();
+		vi.clearAllMocks();
+		mockSend = vi.fn();
 		mockClient = {
 			send: mockSend,
-		} as unknown as jest.Mocked<RDSDataClient>;
+		} as unknown as Mocked<RDSDataClient>;
 		mockCreateRdsDataClient.mockReturnValue(mockClient);
 	});
 

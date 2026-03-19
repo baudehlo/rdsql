@@ -1,19 +1,21 @@
 import { EventEmitter } from "node:events";
 import * as readline from "node:readline";
+import type { Mocked } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ReplSession } from "../src/repl";
 import type { DatabaseConfig } from "../src/types";
 
-jest.mock("node:readline");
-jest.mock("../src/aws");
-jest.mock("../src/db");
+vi.mock("node:readline");
+vi.mock("../src/aws");
+vi.mock("../src/db");
 
-const mockReadline = readline as jest.Mocked<typeof readline>;
+const mockReadline = readline as Mocked<typeof readline>;
 
 class MockInterface extends EventEmitter {
-	prompt = jest.fn();
-	setPrompt = jest.fn();
-	close = jest.fn();
-	on = jest.fn((event: string, listener: (...args: unknown[]) => void) => {
+	prompt = vi.fn();
+	setPrompt = vi.fn();
+	close = vi.fn();
+	on = vi.fn((event: string, listener: (...args: unknown[]) => void) => {
 		super.on(event, listener);
 		return this;
 	});
@@ -24,7 +26,7 @@ describe("repl", () => {
 	let dbConfig: DatabaseConfig;
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		mockRlInterface = new MockInterface();
 		mockReadline.createInterface.mockReturnValue(
 			mockRlInterface as unknown as readline.Interface,
@@ -63,7 +65,7 @@ describe("repl", () => {
 		});
 
 		it("should handle /? help command", async () => {
-			const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
 
 			const session = new ReplSession(dbConfig, "testdb");
 			await session.start();
@@ -84,7 +86,7 @@ describe("repl", () => {
 		});
 
 		it("should handle /h help command", async () => {
-			const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
 
 			const session = new ReplSession(dbConfig, "testdb");
 			await session.start();
@@ -105,7 +107,7 @@ describe("repl", () => {
 		});
 
 		it("should handle /format command", async () => {
-			const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
 
 			const session = new ReplSession(dbConfig, "testdb");
 			await session.start();
@@ -124,7 +126,7 @@ describe("repl", () => {
 		});
 
 		it("should handle invalid format", async () => {
-			const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
 
 			const session = new ReplSession(dbConfig, "testdb");
 			await session.start();
@@ -145,7 +147,7 @@ describe("repl", () => {
 		});
 
 		it("should handle unknown slash command", async () => {
-			const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
 
 			const session = new ReplSession(dbConfig, "testdb");
 			await session.start();
@@ -183,7 +185,7 @@ describe("repl", () => {
 		});
 
 		it("should handle SIGINT when SQL is accumulated", async () => {
-			const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
 
 			const session = new ReplSession(dbConfig, "testdb");
 			await session.start();
@@ -226,8 +228,10 @@ describe("repl", () => {
 		});
 
 		it("should handle close event", async () => {
-			const consoleSpy = jest.spyOn(console, "log").mockImplementation();
-			const exitSpy = jest.spyOn(process, "exit").mockImplementation();
+			const consoleSpy = vi.spyOn(console, "log").mockImplementation();
+			const exitSpy = vi
+				.spyOn(process, "exit")
+				.mockImplementation((_code) => undefined as never);
 
 			const session = new ReplSession(dbConfig, "testdb");
 			await session.start();
