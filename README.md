@@ -20,13 +20,13 @@ A psql-like query tool for AWS RDS Data API using TypeScript.
 ## Installation
 
 ```bash
-npm install -g rdsql
+npm install -g rds-data-api-cli
 ```
 
 Or clone and build from source:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/baudehlo/rdsql.git
 cd rdsql
 npm install
 npm run build

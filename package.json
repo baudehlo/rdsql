@@ -1,6 +1,6 @@
 {
-  "name": "rdsql",
-  "version": "1.0.0",
+  "name": "rds-data-api-cli",
+  "version": "1.0.1",
   "description": "A psql-like query tool for AWS RDS Data API",
   "main": "dist/index.js",
   "bin": {
