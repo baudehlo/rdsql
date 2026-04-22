@@ -69,6 +69,25 @@ database = testdb
 
 			expect(() => readConfig()).toThrow("Failed to read config");
 		});
+
+		it("should sanitize undefined optional credential fields", () => {
+			mockFs.existsSync.mockReturnValue(true);
+			mockFs.readFileSync.mockReturnValue(`
+[mydb]
+profile = undefined
+accessKeyId =
+secretAccessKey = undefined
+region = us-east-1
+resourceArn = arn:aws:rds:us-east-1:123456789012:cluster:test-cluster
+database = testdb
+      `);
+
+			const config = readConfig();
+
+			expect(config.databases.mydb.profile).toBeUndefined();
+			expect(config.databases.mydb.accessKeyId).toBeUndefined();
+			expect(config.databases.mydb.secretAccessKey).toBeUndefined();
+		});
 	});
 
 	describe("writeConfig", () => {
@@ -129,6 +148,34 @@ database = testdb
 			const config: AppConfig = { databases: {} };
 
 			expect(() => writeConfig(config)).toThrow("Failed to write config");
+		});
+
+		it("should not write undefined optional credential fields", () => {
+			mockFs.existsSync.mockReturnValue(true);
+			mockFs.mkdirSync.mockImplementation();
+			mockFs.writeFileSync.mockImplementation();
+
+			const config: AppConfig = {
+				databases: {
+					mydb: {
+						profile: undefined,
+						accessKeyId: "AKIA_TEST",
+						secretAccessKey: "SECRET_TEST",
+						region: "us-east-1",
+						resourceArn: "arn:aws:rds:us-east-1:123456789012:cluster:test",
+						database: "testdb",
+						secretArn: undefined,
+					},
+				},
+			};
+
+			writeConfig(config);
+
+			const writtenContent = mockFs.writeFileSync.mock.calls[0][1] as string;
+			expect(writtenContent).not.toContain("profile");
+			expect(writtenContent).not.toContain("undefined");
+			expect(writtenContent).toContain("accessKeyId=AKIA_TEST");
+			expect(writtenContent).toContain("secretAccessKey=SECRET_TEST");
 		});
 	});
 

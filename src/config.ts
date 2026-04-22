@@ -4,6 +4,42 @@ import * as path from "node:path";
 import * as ini from "ini";
 import type { AppConfig, DatabaseConfig } from "./types";
 
+function normalizeOptionalString(value: unknown): string | undefined {
+	if (typeof value !== "string") {
+		return undefined;
+	}
+
+	const trimmed = value.trim();
+	if (!trimmed || trimmed.toLowerCase() === "undefined") {
+		return undefined;
+	}
+
+	return trimmed;
+}
+
+function sanitizeDatabaseConfig(rawConfig: DatabaseConfig): DatabaseConfig {
+	return {
+		region: rawConfig.region,
+		resourceArn: rawConfig.resourceArn,
+		database: rawConfig.database,
+		profile: normalizeOptionalString(rawConfig.profile),
+		accessKeyId: normalizeOptionalString(rawConfig.accessKeyId),
+		secretAccessKey: normalizeOptionalString(rawConfig.secretAccessKey),
+		secretArn: normalizeOptionalString(rawConfig.secretArn),
+		username: normalizeOptionalString(rawConfig.username),
+		password: normalizeOptionalString(rawConfig.password),
+	};
+}
+
+function compactDatabaseConfig(config: DatabaseConfig): Record<string, string> {
+	const sanitized = sanitizeDatabaseConfig(config);
+	const compactedEntries = Object.entries(sanitized).filter(
+		([, value]) => value !== undefined,
+	);
+
+	return Object.fromEntries(compactedEntries) as Record<string, string>;
+}
+
 export function getConfigPath(): string {
 	const configDir = path.join(os.homedir(), ".rdsql");
 	return path.join(configDir, "config.ini");
@@ -34,7 +70,9 @@ export function readConfig(): AppConfig {
 
 		Object.keys(parsed).forEach((key) => {
 			if (key !== "current" && typeof parsed[key] === "object") {
-				config.databases[key] = parsed[key] as DatabaseConfig;
+				config.databases[key] = sanitizeDatabaseConfig(
+					parsed[key] as DatabaseConfig,
+				);
 			}
 		});
 
@@ -55,7 +93,7 @@ export function writeConfig(config: AppConfig): void {
 	}
 
 	Object.keys(config.databases).forEach((dbName) => {
-		iniData[dbName] = config.databases[dbName];
+		iniData[dbName] = compactDatabaseConfig(config.databases[dbName]);
 	});
 
 	try {
