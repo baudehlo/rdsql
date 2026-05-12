@@ -266,21 +266,24 @@ Ensure your IAM user/role has these permissions:
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "RdsDataApi",
       "Effect": "Allow",
       "Action": [
-        "rds-data:ExecuteStatement",
-        "rds-data:BatchExecuteStatement"
+        "rds-data:ExecuteStatement"
       ],
-      "Resource": "arn:aws:rds:*:*:cluster:*"
+      "Resource": "arn:aws:rds:*:123456789012:cluster:*"
     },
     {
+      "Sid": "SecretsManagerAccess",
       "Effect": "Allow",
       "Action": [
-        "secretsmanager:GetSecretValue"
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:ListSecrets"
       ],
-      "Resource": "arn:aws:secretsmanager:*:*:secret:*"
+      "Resource": "*"
     },
     {
+      "Sid": "RdsDescribeClusters",
       "Effect": "Allow",
       "Action": [
         "rds:DescribeDBClusters"
@@ -290,6 +293,22 @@ Ensure your IAM user/role has these permissions:
   ]
 }
 ```
+
+Replace `123456789012` with your AWS account ID. To restrict access further, you can scope the `secretsmanager:GetSecretValue` action to specific secret ARNs instead of `"*"`:
+
+```json
+{
+  "Sid": "SecretsManagerAccess",
+  "Effect": "Allow",
+  "Action": [
+    "secretsmanager:GetSecretValue",
+    "secretsmanager:ListSecrets"
+  ],
+  "Resource": "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-db-secret-*"
+}
+```
+
+> **Note**: `secretsmanager:ListSecrets` and `rds:DescribeDBClusters` are only required during `rdsql configure` to enumerate available clusters and secrets. If you skip interactive configuration and provide ARNs directly, you can omit those two actions.
 
 ## Development
 
