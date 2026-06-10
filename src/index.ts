@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 import { createRdsDataClient } from "./aws";
+import pkg from "../package.json";
 import {
 	getCurrentDatabase,
 	getDatabase,
@@ -29,7 +30,7 @@ const program = new Command();
 program
 	.name("rdsql")
 	.description("A psql-like query tool for AWS RDS Data API")
-	.version("1.0.0");
+	.version(pkg.version);
 
 program
 	.command("configure")
