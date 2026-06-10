@@ -1,5 +1,6 @@
 import * as readline from "node:readline";
 import { createRdsDataClient } from "./aws";
+import { executeDescribe } from "./describe";
 import { executeQuery } from "./db";
 import { format } from "./formatter";
 import type { DatabaseConfig, OutputFormat } from "./types";
@@ -37,6 +38,11 @@ export class ReplSession {
 		console.log("  /?, /h                         - Show this help");
 		console.log("  /q                             - Quit");
 		console.log("  Ctrl-C                         - Quit");
+		console.log("\npsql-style backslash commands:");
+		console.log("  \\d                             - List all relations");
+		console.log("  \\d <pattern>                   - Describe relation(s) matching pattern");
+		console.log("  \\d+ <pattern>                  - Verbose describe (adds storage, comments, definition)");
+		console.log("  Patterns: * = any chars, ? = any char, schema.name, cust*");
 		console.log(
 			"\nEnter SQL statements ending with semicolon (;) to execute.\n",
 		);
@@ -74,6 +80,30 @@ export class ReplSession {
 		console.log(`Unknown command: ${trimmed}`);
 		console.log("Type /? or /h for help");
 		return false;
+	}
+
+	private async executeBackslashCommand(command: string): Promise<void> {
+		// Strip the leading \d (and optional d) to get the args
+		// command is already trimmed and starts with \d
+		const args = command.slice(2); // everything after "\d"
+		const client = createRdsDataClient(this.dbConfig);
+
+		try {
+			const output = await executeDescribe(
+				client,
+				this.dbConfig.resourceArn,
+				this.dbConfig.database,
+				this.dbConfig.secretArn ?? "",
+				args,
+				this.debug,
+			);
+			console.log(output);
+		} catch (error) {
+			console.error(
+				"Error:",
+				error instanceof Error ? error.message : String(error),
+			);
+		}
 	}
 
 	private async executeSql(sql: string): Promise<void> {
@@ -116,6 +146,14 @@ export class ReplSession {
 					this.rl.close();
 					return;
 				}
+				this.rl.prompt();
+				return;
+			}
+
+			// Handle psql-style \d backslash commands (only when not mid-SQL)
+			if (this.currentSql === "" && trimmed.startsWith("\\d")) {
+				await this.executeBackslashCommand(trimmed);
+				this.rl.setPrompt(this.getPrompt());
 				this.rl.prompt();
 				return;
 			}
