@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { createRdsDataClient } from "./aws";
 import pkg from "../package.json";
+import { createRdsDataClient } from "./aws";
 import {
 	getCurrentDatabase,
 	getDatabase,
