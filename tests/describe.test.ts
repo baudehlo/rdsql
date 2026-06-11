@@ -75,7 +75,11 @@ function parsePattern(pattern: string): ParsedPattern {
 		}
 	}
 	if (dots.length === 0) {
-		return { schemaRe: null, nameRe: patternSegToRegex(pattern), checkVis: true };
+		return {
+			schemaRe: null,
+			nameRe: patternSegToRegex(pattern),
+			checkVis: true,
+		};
 	}
 	const dotPos = dots[0];
 	return {

@@ -1,7 +1,7 @@
 import * as readline from "node:readline";
 import { createRdsDataClient } from "./aws";
-import { executeDescribe } from "./describe";
 import { executeQuery } from "./db";
+import { executeDescribe } from "./describe";
 import { format } from "./formatter";
 import type { DatabaseConfig, OutputFormat } from "./types";
 
@@ -40,8 +40,12 @@ export class ReplSession {
 		console.log("  Ctrl-C                         - Quit");
 		console.log("\npsql-style backslash commands:");
 		console.log("  \\d                             - List all relations");
-		console.log("  \\d <pattern>                   - Describe relation(s) matching pattern");
-		console.log("  \\d+ <pattern>                  - Verbose describe (adds storage, comments, definition)");
+		console.log(
+			"  \\d <pattern>                   - Describe relation(s) matching pattern",
+		);
+		console.log(
+			"  \\d+ <pattern>                  - Verbose describe (adds storage, comments, definition)",
+		);
 		console.log("  Patterns: * = any chars, ? = any char, schema.name, cust*");
 		console.log(
 			"\nEnter SQL statements ending with semicolon (;) to execute.\n",

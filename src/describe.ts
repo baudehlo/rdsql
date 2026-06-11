@@ -240,7 +240,15 @@ async function describeOne(
 			];
 			output.push(
 				fmtDescribeTable(
-					["Type", "Start", "Minimum", "Maximum", "Increment", "Cycles?", "Cache"],
+					[
+						"Type",
+						"Start",
+						"Minimum",
+						"Maximum",
+						"Increment",
+						"Cycles?",
+						"Cache",
+					],
 					rows,
 					title,
 				),
