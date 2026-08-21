@@ -17,6 +17,14 @@ import type { OutputFormat } from "./types";
 
 const VALID_FORMATS: OutputFormat[] = ["csv", "html", "json", "text"];
 
+export function resolveDatabaseName(
+	localDbName: string | undefined,
+	globalDbName: string | undefined,
+	currentDbName: string | undefined,
+): string | undefined {
+	return localDbName || globalDbName || currentDbName;
+}
+
 function parseOutputFormat(value: string): OutputFormat {
 	if (VALID_FORMATS.includes(value as OutputFormat)) {
 		return value as OutputFormat;
@@ -25,138 +33,149 @@ function parseOutputFormat(value: string): OutputFormat {
 	return "text";
 }
 
-const program = new Command();
+export function createProgram(): Command {
+	const program = new Command();
 
-program
-	.name("rdsql")
-	.description("A psql-like query tool for AWS RDS Data API")
-	.version(pkg.version);
+	program
+		.name("rdsql")
+		.description("A psql-like query tool for AWS RDS Data API")
+		.version(pkg.version);
 
-program
-	.command("configure")
-	.description("Run interactive configurator to set up database connections")
-	.action(async () => {
-		try {
-			await runConfigurator();
-		} catch (error) {
-			console.error("Configuration error:", error);
-			process.exit(1);
-		}
-	});
-
-program
-	.command("list")
-	.description("List all configured databases")
-	.action(() => {
-		try {
-			const databases = listDatabases();
-			const current = getCurrentDatabase();
-
-			if (databases.length === 0) {
-				console.log(
-					'No databases configured. Run "rdsql configure" to set up a connection.',
-				);
-				return;
-			}
-
-			console.log("\nConfigured databases:");
-			databases.forEach((db) => {
-				const marker = db === current ? " (current)" : "";
-				console.log(`  - ${db}${marker}`);
-			});
-			console.log("");
-		} catch (error) {
-			console.error("Error listing databases:", error);
-			process.exit(1);
-		}
-	});
-
-program
-	.command("use <name>")
-	.description("Set the current database")
-	.action((name: string) => {
-		try {
-			setCurrentDatabase(name);
-			console.log(`Current database set to: ${name}`);
-		} catch (error) {
-			console.error("Error setting current database:", error);
-			process.exit(1);
-		}
-	});
-
-program
-	.command("query <sql>")
-	.description("Execute a SQL query")
-	.option("--db <name>", "Database to use (defaults to current)")
-	.option("--format <format>", "Output format: text, csv, json, html", "text")
-	.option("--debug", "Dump raw API response to stderr for debugging")
-	.action(
-		async (
-			sql: string,
-			options: { db?: string; format: string; debug?: boolean },
-		) => {
+	program
+		.command("configure")
+		.description("Run interactive configurator to set up database connections")
+		.action(async () => {
 			try {
-				const dbName = options.db || getCurrentDatabase();
-
-				if (!dbName) {
-					console.error("No database specified and no current database set.");
-					console.error('Use --db <name> or run "rdsql use <name>" first.');
-					process.exit(1);
-				}
-
-				const dbConfig = getDatabase(dbName);
-				if (!dbConfig) {
-					console.error(`Database "${dbName}" not found in configuration.`);
-					process.exit(1);
-				}
-
-				const client = createRdsDataClient(dbConfig);
-				const result = await executeQuery(
-					client,
-					dbConfig.resourceArn,
-					dbConfig.database,
-					sql,
-					dbConfig.secretArn,
-					dbConfig.username,
-					dbConfig.password,
-					options.debug,
-				);
-
-				const formatted = format(result, parseOutputFormat(options.format));
-				console.log(formatted);
+				await runConfigurator();
 			} catch (error) {
-				console.error("Query error:", error);
+				console.error("Configuration error:", error);
 				process.exit(1);
 			}
-		},
-	);
+		});
 
-program.action(async (options: { db?: string; debug?: boolean }) => {
-	try {
-		const dbName = options.db || getCurrentDatabase();
+	program
+		.command("list")
+		.description("List all configured databases")
+		.action(() => {
+			try {
+				const databases = listDatabases();
+				const current = getCurrentDatabase();
 
-		if (!dbName) {
-			console.error("No database specified and no current database set.");
-			console.error(
-				'Run "rdsql configure" to set up a connection, or use "rdsql --db <name>".',
-			);
+				if (databases.length === 0) {
+					console.log(
+						'No databases configured. Run "rdsql configure" to set up a connection.',
+					);
+					return;
+				}
+
+				console.log("\nConfigured databases:");
+				databases.forEach((db) => {
+					const marker = db === current ? " (current)" : "";
+					console.log(`  - ${db}${marker}`);
+				});
+				console.log("");
+			} catch (error) {
+				console.error("Error listing databases:", error);
+				process.exit(1);
+			}
+		});
+
+	program
+		.command("use <name>")
+		.description("Set the current database")
+		.action((name: string) => {
+			try {
+				setCurrentDatabase(name);
+				console.log(`Current database set to: ${name}`);
+			} catch (error) {
+				console.error("Error setting current database:", error);
+				process.exit(1);
+			}
+		});
+
+	program
+		.command("query <sql>")
+		.description("Execute a SQL query")
+		.option("--db <name>", "Database to use (defaults to current)")
+		.option("--format <format>", "Output format: text, csv, json, html", "text")
+		.option("--debug", "Dump raw API response to stderr for debugging")
+		.action(
+			async (
+				sql: string,
+				options: { db?: string; format: string; debug?: boolean },
+				command: Command,
+			) => {
+				try {
+					const dbName = resolveDatabaseName(
+						options.db,
+						(command.optsWithGlobals() as { db?: string }).db,
+						getCurrentDatabase(),
+					);
+
+					if (!dbName) {
+						console.error("No database specified and no current database set.");
+						console.error('Use --db <name> or run "rdsql use <name>" first.');
+						process.exit(1);
+					}
+
+					const dbConfig = getDatabase(dbName);
+					if (!dbConfig) {
+						console.error(`Database "${dbName}" not found in configuration.`);
+						process.exit(1);
+					}
+
+					const client = createRdsDataClient(dbConfig);
+					const result = await executeQuery(
+						client,
+						dbConfig.resourceArn,
+						dbConfig.database,
+						sql,
+						dbConfig.secretArn,
+						dbConfig.username,
+						dbConfig.password,
+						options.debug,
+					);
+
+					const formatted = format(result, parseOutputFormat(options.format));
+					console.log(formatted);
+				} catch (error) {
+					console.error("Query error:", error);
+					process.exit(1);
+				}
+			},
+		);
+
+	program.action(async (options: { db?: string; debug?: boolean }) => {
+		try {
+			const dbName = options.db || getCurrentDatabase();
+
+			if (!dbName) {
+				console.error("No database specified and no current database set.");
+				console.error(
+					'Run "rdsql configure" to set up a connection, or use "rdsql --db <name>".',
+				);
+				process.exit(1);
+			}
+
+			const dbConfig = getDatabase(dbName);
+			if (!dbConfig) {
+				console.error(`Database "${dbName}" not found in configuration.`);
+				process.exit(1);
+			}
+
+			await startRepl(dbConfig, dbName, options.debug);
+		} catch (error) {
+			console.error("Error:", error);
 			process.exit(1);
 		}
+	});
 
-		const dbConfig = getDatabase(dbName);
-		if (!dbConfig) {
-			console.error(`Database "${dbName}" not found in configuration.`);
-			process.exit(1);
-		}
+	program.option("--db <name>", "Database to use for REPL");
+	program.option("--debug", "Dump raw API response to stderr for debugging");
 
-		await startRepl(dbConfig, dbName, options.debug);
-	} catch (error) {
-		console.error("Error:", error);
-		process.exit(1);
-	}
-});
+	return program;
+}
 
-program.option("--db <name>", "Database to use for REPL");
-program.option("--debug", "Dump raw API response to stderr for debugging");
-
-program.parse();
+if (require.main === module) {
+	createProgram().parse();
+}
