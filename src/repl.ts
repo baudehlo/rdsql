@@ -172,6 +172,7 @@ export class ReplSession {
 					await this.executeSql(sqlToExecute);
 				}
 
+				this.rl.setPrompt(this.getPrompt());
 				this.rl.prompt();
 			} else {
 				this.rl.setPrompt("    -> ");

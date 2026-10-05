@@ -203,6 +203,9 @@ describe("repl", () => {
 
 				await lineListener("FROM users;");
 				expect(mockRlInterface.prompt).toHaveBeenCalled();
+				expect(mockRlInterface.setPrompt).toHaveBeenLastCalledWith(
+					"rdsql [testdb]> ",
+				);
 			}
 		});
 
